@@ -20,10 +20,10 @@ import sys
 from ICMP.IcmpApp import IcmpSender, IcmpReceiver
 
 
-def show_usage ():
+def show_usage():
     print """
       USAGE:
-        icmp.py recv <destination file>
+        icmp.py recv <destination file> <remote address>
         icmp.py send <file to transfer> <remote address>
     """
     exit()
@@ -37,14 +37,21 @@ if __name__ == '__main__':
         show_usage()
 
     if action == 'send': 
-        try:    dst_addr = sys.argv[3]
-        except: show_usage()
+        try:
+            dst_addr = sys.argv[3]
+        except:
+            show_usage()
 
         with IcmpSender(filename) as sender:
             sender.send(dst_addr)
 
     elif action == 'recv': 
+        try:
+            dst_addr = sys.argv[3]
+        except:
+            show_usage()
+
         with IcmpReceiver(filename) as receiver:
-            receiver.receive()
+            receiver.receive(dst_addr)
 
 

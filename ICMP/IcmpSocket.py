@@ -15,18 +15,19 @@
 #    along with this program. If not, see <http://www.gnu.org/licenses/>
 
 from socket import *
-from IcmpPacket import IcmpPacket
+from IcmpPacket import IcmpPacket, ICMP_PACKET_SIZE
 
-class IcmpSocket (object):
+class IcmpSocket(object):
     
-    def __init__ (self):
+    def __init__(self):
         self.socket = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)
+        self.socket.settimeout(0.001)
 
-    def recv (self):
-        return IcmpPacket(raw_p=self.socket.recv(1024)[20:])
+    def recv(self):
+        return IcmpPacket(raw_p=self.socket.recv(ICMP_PACKET_SIZE+20)[20:])
 
-    def sendto (self, packet, dst_addr):
-        self.socket.sendto(packet.packet, (dst_addr,1))
+    def sendto(self, packet, dst_addr):
+        self.socket.sendto(packet.packet, (dst_addr, 1))
         
 
 

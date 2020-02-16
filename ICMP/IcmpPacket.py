@@ -29,44 +29,47 @@ ECHO_REPLY = 0
 ECHO_REQUEST= 8
 # (...)
 
-ICMP_PACKET_SIZE = 64
-ICMP_PAYLOAD_SIZE = ICMP_PACKET_SIZE - 8
+ICMP_PACKET_SIZE = 65000
+ICMP_PAYLOAD_SIZE = ICMP_PACKET_SIZE - 16
 
-class IcmpPacket (object):
+class IcmpPacket(object):
 
-    def __init__ (self, type_packet=0, code=0, seq_n=0, payload=0, raw_p=None):
-        if raw_p :
-            p = struct.unpack('bbHHh56s', raw_p)
+    def __init__(self, type_packet=0, code=0, seq_n=0, payload=0, raw_p=None, fingerprint='\x90\x86\x27\x73'):
+        if raw_p and len(raw_p) == ICMP_PACKET_SIZE:
+            p = struct.unpack('!bbHHh4sI%ds' % ICMP_PAYLOAD_SIZE, raw_p)
             self.type_packet = p[0]
             self.code = p[1] 
             self.checksum = p[2]
             self.identifier = p[3]
             self.seq_n = p[4]
-            self.payload = p[5]
+            self.fingerprint = p[5]
+            self.payload_size = p[6]
+            self.payload = p[7][:self.payload_size]
         else:
             self.type_packet = type_packet
             self.code = code
             self.checksum = 0
             self.identifier = os.getpid() & 0xFFFF
             self.seq_n = seq_n
+            self.fingerprint = fingerprint[:4]
             self.payload = payload
-            
+
             self.packet = None
 
-            header_fmt = 'bbHHh'
+            header_fmt = 'bbHHh4sI'
             payload_fmt = '%ds' % (ICMP_PAYLOAD_SIZE)
             packet_fmt = '!' + header_fmt + payload_fmt
 
             self.packet = struct.pack(packet_fmt, self.type_packet, self.code, 
                                       self.checksum, self.identifier, 
-                                      self.seq_n, str(self.payload))
+                                      self.seq_n, self.fingerprint, len(str(self.payload)), str(self.payload))
             self.calcule_checksum()
             self.packet = struct.pack(packet_fmt, self.type_packet, self.code, 
                                       self.checksum, self.identifier, 
-                                      self.seq_n, str(self.payload))
+                                      self.seq_n, self.fingerprint, len(str(self.payload)), str(self.payload))
                                       
 
-    def __repr__ (self):
+    def __repr__(self):
         if self.type_packet is ECHO_REPLY:
             type_packet = 'ECHO_REPLY'
         elif self.type_packet is ECHO_REQUEST:
@@ -79,7 +82,7 @@ class IcmpPacket (object):
                self.payload
     
 
-    def calcule_checksum (self):
+    def calcule_checksum(self):
         """
         I'm not too confident that this is right but testing seems
         to suggest that it gives the same answers as in_cksum in ping.c
