@@ -130,8 +130,9 @@ class IcmpReceiver(IcmpApp):
             if icmp.type_packet is ECHO_REQUEST and fingerprint == self.fingerprint:
                 seq = icmp.seq_n
 
-                if seq not in window and len(window) < self.window_size:
-                    window[seq] = icmp
+                if (last_received_seq + self.window_size - 1) > seq > last_received_seq:
+                    if seq not in window and len(window) < self.window_size:
+                        window[seq] = icmp
 
                 if seq == next_seq:
                     #print('Receive packet %d' % seq)
